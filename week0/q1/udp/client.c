@@ -24,17 +24,15 @@ int main(int argc, char *argv[]) {
        exit(0);
     }
     
-    int sockfd, portno, n;
-
+    int sockfd, portno, n, servlen;
     struct sockaddr_in serv_addr;
     struct hostent *server;       // defines a host computer on the Internet
-    char buffer[BUFFER_SIZE] = {0};
+    char buffer[BUFFER_SIZE] = "I am client";
     
     // creating a socket
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0)  {
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) {
         error("ERROR opening socket");
-        exit(1);
     }
     
     // get server port no
@@ -50,32 +48,29 @@ int main(int argc, char *argv[]) {
     // set server address
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    bcopy((char *) server->h_addr, (char *) &serv_addr, server->h_length);
+    bcopy((char *) server->h_addr, (char *) &serv_addr.sin_addr.s_addr, server->h_length);
+    // serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_addr.sin_port = htons(portno);
-    
-    // connect to server
-    if(connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-        error("ERROR connecting");
-        exit(1);
+  
+    // printf("SERVER ADDR = %d\n", serv_addr.sin_addr.s_addr);
+
+    // send message to server (to tell server to send back greeting)
+    n = sendto(sockfd, "1", 2, MSG_CONFIRM, (struct sockaddr*) &serv_addr, sizeof(serv_addr));
+    if(n < 0) {
+        error("ERROR sending message to server");
     }
-    
-    // connection established to server!
-    
-    // send message to server
-    printf("Please enter the message: ");
-    fgets(buffer, BUFFER_SIZE-1, stdin);
-    n = write(sockfd, buffer, strlen(buffer));
-    if (n < 0) 
-         error("ERROR writing to socket");
-    
-    // get ACK from server
-    bzero(buffer, 256);
-    n = read(sockfd, buffer, 255);
-    if (n < 0) 
-         error("ERROR reading from socket");
-         
-    // output ACK
+
+    // recieve greeting from server
+    n = recvfrom(sockfd, buffer, BUFFER_SIZE, MSG_WAITALL, (struct sockaddr*) &serv_addr, (socklen_t*) &servlen);
+    if(n < 0) {
+        error("ERROR recieving greeting from server");
+    }
+
+    // output greeting by server
     printf("%s\n", buffer);
-           
+   
+    // close socket
+    close(sockfd);
+
     return 0;
 }

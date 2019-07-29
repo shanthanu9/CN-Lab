@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/types.h>    // contains defs of system calls. Used in next header files 
 #include <sys/socket.h>   // defs and structures for sockets
@@ -22,20 +23,23 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-	int sockfd, newsockfd, portno, clilen, n;
-	char buffer[BUFFER_SIZE]= {0};
+	int sockfd, portno, clilen, n;
+	char buffer[BUFFER_SIZE]= "Hello Client!";
 	struct sockaddr_in serv_addr, cli_addr;
 	
 	// get port number
 	portno = atoi(argv[1]);
 	
 	// creating a socket
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd < 0) {
         error("ERROR opening socket");
-        exit(1);    
     }
     
+    // reset client address
+    bzero((char *) &cli_addr, sizeof(cli_addr));
+    clilen = sizeof(cli_addr);
+
     // set server address
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
@@ -45,33 +49,25 @@ int main(int argc, char *argv[]) {
     // bind socket to server address
     if(bind(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0) {
         error("ERROR on binding");
-        exit(1);
     }
-    
-    // allows the process to listen from socket
-    listen(sockfd, 5);
-    clilen = sizeof(cli_addr);
-    
-    // accept a connection (block until any connection occurs)
-    newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-    if(newsockfd < 0) {
-        error("ERROR on accept");
-        exit(1);
+  
+    char abc[2];
+    // recieve message from client (to get client address)
+    n = recvfrom(sockfd, abc, 2, MSG_WAITALL, (struct sockaddr*) &cli_addr, &clilen);
+    if(n < 0) {
+        error("ERROR recieving message from client");
     }
-    
-    // connection established with client!
-    
-    // read from client
-    n = read(newsockfd, buffer, BUFFER_SIZE-1);
-    if(n < 0) error("ERROR reading from socket");
-    
-    // print client message
-    printf("Here is the message: %s\n",buffer);
 
-	
-	// send back ACK to client
-	n = write(newsockfd,"I got your message",18);
-    if (n < 0) error("ERROR writing to socket");
-    
+	// send greeting to client client
+    n = sendto(sockfd, buffer, strlen(buffer), MSG_CONFIRM, (const struct sockaddr*) &cli_addr, clilen);
+    if(n < 0) {
+        error("ERROR sending greeting to client");
+    }
+
+    printf("Sent greeting to client!\n");
+
+    // close socket
+    close(sockfd);
+
 	return 0;
 }
