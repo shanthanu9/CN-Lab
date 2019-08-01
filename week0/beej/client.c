@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
     }
 
     // print connection
-    inet_ntop(res->ai_family, get_in_addr((struct sockaddr*)&(res->ai_addr)), s, sizeof s);
+    inet_ntop(res->ai_family, get_in_addr((struct sockaddr*)res->ai_addr), s, sizeof s);
     printf("Connected to %s!\n", s);
 
     // recv message from 
@@ -68,8 +68,6 @@ int main(int argc, char *argv[]) {
     printf("Server sent: %s\n", buffer);
 
     freeaddrinfo(res);
-    
-
 
     return 0;
 }
