@@ -8,7 +8,7 @@
 #   (i) : 10.0.0.i/24
 #
 #   br0, br1 and br2 are bridges
-#   n1, n2 and n3 are namespaces
+#   n0, n1 and n2 are namespaces
 #
 ################################
 
